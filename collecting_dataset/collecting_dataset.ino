@@ -5,8 +5,7 @@
 
 #define phPin A0          // the pH meter Analog output is connected with the Arduino’s Analog
 #define TdsSensorPin A1
-#define out1 2  // power
-#define out2 3  // ground
+
 #define phUp 6
 #define phDown 5
 #define tdsUp 4
@@ -26,18 +25,18 @@ int pumpMode[] = {phUp, phDown, tdsUp, tdsDown};
 
 String readInput;
 uint32_t timer;
-int read_sens = 0;
+float curr1, curr2, percent = 0.01;
+float thresholdPH = 14 * percent, thresholdTDS = 4000 * percent; //within x% in either direction
 
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(19200);
+  Serial1.begin(9600);
   gravityTds.setPin(TdsSensorPin);
   gravityTds.setAref(5.0);  //reference voltage on ADC, default 5.0V on Arduino UNO
   gravityTds.setAdcRange(1024);  //1024 for 10bit ADC;4096 for 12bit ADC
   gravityTds.begin();  //initialization
 
-  pinMode(out1, OUTPUT);
-  pinMode(out2, OUTPUT);
   pinMode(phUp, OUTPUT);
   pinMode(phDown, OUTPUT);
   pinMode(tdsUp, OUTPUT);
@@ -81,11 +80,6 @@ float readTds() {
   return tdsValue;
 }
 
-int trigger(int x) {
-  digitalWrite(out1, x);
-  digitalWrite(out2, LOW);
-}
-
 void pump(String readInput) {
   if (readInput == "ph up\n") {
     digitalWrite(phUp, HIGH);
@@ -110,26 +104,22 @@ void loop()
 {
   if (millis() - timer > 1000) {
     timer = millis ();
-    if (read_sens == 0) {
-      trigger(0);
-      read_sens = 1;
-      phValue = readPH();
-      Serial.print("pH: ");
-      Serial.println(phValue, 2);
-      trigger(1);
-    }
-    else {
-      read_sens = 0;
-      tdsValue = readTds();
-      Serial.print("Tds: ");
-      Serial.print(tdsValue, 2);
-      Serial.println("ppm");
+    phValue = readPH();
+    tdsValue = readTds();
+    if ((curr1 >= phValue + thresholdPH || curr1 <= phValue - thresholdPH) || (curr2 >= tdsValue + thresholdTDS || curr2 <= tdsValue - thresholdTDS)) {
+      Serial.print(timer);
+      Serial.print(",");
+      Serial.print(phValue, 2);
+      Serial.print(",");
+      Serial.println(tdsValue, 2);
+      curr1 = phValue;
+      curr2 = tdsValue;
     }
   }
 
-  readInput = Serial.readString();
+  readInput = Serial1.readString();
   if (readInput) {
-    Serial.println(readInput);
+    Serial1.println(readInput);
     pump(readInput);
   }
 }
