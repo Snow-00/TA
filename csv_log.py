@@ -1,7 +1,7 @@
 import serial
 
 arduino_port = "/dev/ttyACM0" #serial port of Arduino
-baud = 19200 #arduino uno runs at 9600 baud
+baud = 9600 #arduino uno runs at 9600 baud
 fileName="dataset_pH.csv" #name of the CSV file generated
 
 ser = serial.Serial(arduino_port, baud)

@@ -1,14 +1,15 @@
 #include <WiFi.h>
-
 #include <WiFiMulti.h>
 
-#include "DHT.h"
+#include "DFRobot_PH.h"
+#include "GravityTDS.h"
+#include <EEPROM.h>
 
-#define DHTPIN 27    
-#define DHTTYPE DHT22  
+#define phPin 12          // the pH meter Analog output is connected with the Arduino’s Analog
+#define TdsSensorPin 13
 
-DHT dht(DHTPIN, DHTTYPE);
- 
+DFRobot_PH ph;
+GravityTDS gravityTds;
 WiFiMulti WiFiMulti;
 
 const char* ssid     = "OPPO"; // Your SSID (Name of your WiFi)
@@ -16,38 +17,38 @@ const char* password = "12345678"; //Your Wifi password
 
 const char* host = "api.thingspeak.com";
 String api_key = "GPFMAB99YI1AZDY9"; // Your API Key provied by thingspeak
+float voltage, phValue, tdsValue, temperature = 25;
 
-void setup(){
+void setup() {
   Serial.begin(9600);
-  Serial.println(F("DHT22 test!"));
-  dht.begin();
+  gravityTds.setPin(TdsSensorPin);
+  gravityTds.setAref(5);  //reference voltage on ADC, default 5.0V on Arduino UNO
+  gravityTds.setAdcRange(4096);  //1024 for 10bit ADC;4096 for 12bit ADC
+  gravityTds.begin();  //initialization
+  ph.begin();
+
   Connect_to_Wifi();
 }
 
-void loop(){
+void loop() {
 
-  float h = dht.readHumidity();
-  float t = dht.readTemperature();
-  float f = dht.readTemperature(true);
+  phValue = readPh();
+  tdsValue = readTds();
 
-  if (isnan(h) || isnan(t) || isnan(f)) {
-    Serial.println(F("Failed to read from DHT sensor!"));
+  if (isnan(phValue) || isnan(tdsValue)) {
+    Serial.println(F("Failed to read from pH or TDS sensor!"));
     return;
   }
 
-  Serial.print(F("Humidity: "));
-  Serial.print(h);
-  Serial.print(F("%  Temperature: "));
-  Serial.print(t);
-  Serial.println(F("°C "));
+  Serial.print("pH: ");
+  Serial.println(phValue, 2);
+  Serial.print("Tds: ");
+  Serial.println(tdsValue, 2);
 
-  
- // call function to send data to Thingspeak
-  Send_Data(t,h);
+  // call function to send data to Thingspeak
+  Send_Data(phValue, tdsValue);
 
-  delay(5000);
- 
-
+  delay(100);
 }
 
 void Connect_to_Wifi()
@@ -70,6 +71,20 @@ void Connect_to_Wifi()
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 
+}
+
+float readPh() {
+  voltage = analogRead(phPin) / 1024.0 * 5000; // read the voltage
+  phValue = ph.readPH(voltage, temperature); // convert voltage to pH with temperature compensation
+  return phValue;
+}
+
+float readTds() {
+  gravityTds.setTemperature(temperature);  // set the temperature and execute temperature compensation
+  gravityTds.update();  //sample and calculate
+  tdsValue = gravityTds.getTdsValue();  // then get the value
+  //  tdsValue = tdsValue / 500;
+  return tdsValue;
 }
 
 void Send_Data(float t, float h)
