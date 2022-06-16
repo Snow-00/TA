@@ -1,4 +1,6 @@
 import serial
+import threading
+from datetime import datetime
 
 arduino_port = "/dev/ttyACM0" #serial port of Arduino
 baud = 9600 #arduino uno runs at 9600 baud
@@ -8,23 +10,27 @@ ser = serial.Serial(arduino_port, baud)
 print("Connected to Arduino port:" + arduino_port)
 samples = 10 #how many samples to collect
 print_labels = False
-line = 0
 
-while True:
-    # incoming = ser.read(9999)
-    # if len(incoming) > 0:
-    # if print_labels:
-    #     if line==0:
-    #         print("Printing Column Headers")
-    #     else:
-    #         print("Line " + str(line) + ": writing...")
-    getData=str(ser.readline())
-    data=getData[0:][:-2]
-    print(data)
-
+while True:    
+    input_command = input("enter command: ")
+    command, duration = input_command.split(",")
+    print(f"command: {command}; time: {duration}")
+    command = command + '\n'
+    ser.write(command.encode())
     file = open(fileName, "a")
-    file.write(data + "\n") #write data with a newline
-    line = line+1
 
-print("Data collection complete!")
-file.close()
+    prev_time = datetime.now()
+    counter = 0
+    while counter < int(duration):
+        data = str(ser.readline(), "utf-8")
+        data = data.strip("\r\n")
+        counter = (datetime.now() - prev_time).seconds
+        data = f"{counter},{data}"
+        
+        file.write(data + "\n") #write data with a newline
+        print(data)
+
+    command = "t\n"
+    ser.write(command.encode())
+    
+    file.close()

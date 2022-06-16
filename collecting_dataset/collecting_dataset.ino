@@ -87,14 +87,12 @@ void loop()
     timer = millis ();
     phValue = readPh();
     tdsValue = readTds();
-    if ((curr1 >= phValue + thresholdPH || curr1 <= phValue - thresholdPH) || (curr2 >= tdsValue + thresholdTDS || curr2 <= tdsValue - thresholdTDS)) {
-      Serial.print(timer);
-      Serial.print(",");
+//    if ((curr1 >= phValue + thresholdPH || curr1 <= ph/Value - thresholdPH) || (curr2 >= tdsValue + thresholdTDS || curr2 <= tdsValue - thresholdTDS)) {
       Serial.print(phValue, 2);
       Serial.print(",");
       Serial.println(tdsValue, 2);
       curr1 = phValue;
       curr2 = tdsValue;
-    }
+//    }/
   }
 }
