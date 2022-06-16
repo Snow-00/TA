@@ -10,14 +10,14 @@ samples = 10 #how many samples to collect
 print_labels = False
 line = 0
 
-while line <= samples:
+while True:
     # incoming = ser.read(9999)
     # if len(incoming) > 0:
-    if print_labels:
-        if line==0:
-            print("Printing Column Headers")
-        else:
-            print("Line " + str(line) + ": writing...")
+    # if print_labels:
+    #     if line==0:
+    #         print("Printing Column Headers")
+    #     else:
+    #         print("Line " + str(line) + ": writing...")
     getData=str(ser.readline())
     data=getData[0:][:-2]
     print(data)
