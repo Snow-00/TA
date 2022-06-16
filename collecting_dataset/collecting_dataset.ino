@@ -16,7 +16,7 @@ GravityTDS gravityTds;
 float voltage, phValue, tdsValue, temperature = 25;
 int pumpMode[] = {phUp, phDown, tdsUp, tdsDown};
 
-String readInput;
+String readInput = "t\n";
 unsigned long timer;
 float curr1, curr2, percent = 0.01;
 float thresholdPH = 14 * percent, thresholdTDS = 4000 * percent; //within x% in either direction
@@ -74,24 +74,25 @@ void pump(String readInput) {
 
 void loop()
 {
-  if (millis() - timer > 1000) {
-    timer = millis ();
-    phValue = readPh();
-    tdsValue = readTds();
-    if ((curr1 >= phValue + thresholdPH || curr1 <= phValue - thresholdPH) || (curr2 >= tdsValue + thresholdTDS || curr2 <= tdsValue - thresholdTDS)) {
-      Serial.print(timer);
-      Serial.print(",");
-      Serial.print(phValue, 2);
-      Serial.print(",");
-      Serial.println(tdsValue, 2);
-      curr1 = phValue;
-      curr2 = tdsValue;
-    }
+  if (Serial.available() > 1) {
+    readInput = Serial.readString();
+    pump(readInput);
   }
 
-  readInput = Serial.readString();
-  if (readInput) {
-    Serial.println(readInput);
-    pump(readInput);
+  if (readInput == "t\n") {
+    return;
+  }
+
+  timer = millis ();
+  phValue = readPh();
+  tdsValue = readTds();
+  if ((curr1 >= phValue + thresholdPH || curr1 <= phValue - thresholdPH) || (curr2 >= tdsValue + thresholdTDS || curr2 <= tdsValue - thresholdTDS)) {
+    Serial.print(timer);
+    Serial.print(",");
+    Serial.print(phValue, 2);
+    Serial.print(",");
+    Serial.println(tdsValue, 2);
+    curr1 = phValue;
+    curr2 = tdsValue;
   }
 }
