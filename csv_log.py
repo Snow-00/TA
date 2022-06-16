@@ -1,5 +1,4 @@
 import serial
-import threading
 from datetime import datetime
 
 arduino_port = "/dev/ttyACM0" #serial port of Arduino
@@ -8,8 +7,6 @@ fileName="dataset_pH.csv" #name of the CSV file generated
 
 ser = serial.Serial(arduino_port, baud)
 print("Connected to Arduino port:" + arduino_port)
-samples = 10 #how many samples to collect
-print_labels = False
 
 while True:    
     input_command = input("enter command: ")
