@@ -6,8 +6,8 @@
 #define TdsSensorPin A1
 
 #define phUp 4
-#define phDown 5
-#define tdsUp 6
+#define phDown 6
+#define tdsUp 5
 #define tdsDown 7
 
 DFRobot_PH ph;
@@ -25,22 +25,22 @@ void setup()
 {
   Serial.begin(9600);
   gravityTds.setPin(TdsSensorPin);
-  gravityTds.setAref(5);  //reference voltage on ADC, default 5.0V on Arduino UNO
+  gravityTds.setAref(5.0);  //reference voltage on ADC, default 5.0V on Arduino UNO
   gravityTds.setAdcRange(1024);  //1024 for 10bit ADC;4096 for 12bit ADC
   gravityTds.begin();  //initialization
   ph.begin();
 
-  pinMode(phUp, OUTPUT);
-  pinMode(phDown, OUTPUT);
-  pinMode(tdsUp, OUTPUT);
-  pinMode(tdsDown, OUTPUT);
-
+  for (int i = 0; i < 4; i++) {
+    pinMode(pumpMode[i], OUTPUT);
+    digitalWrite(pumpMode[i], HIGH);
+  }
   timer = millis ();
 }
 
 float readPh() {
   voltage = analogRead(phPin) / 1024.0 * 5000; // read the voltage
   phValue = ph.readPH(voltage, temperature); // convert voltage to pH with temperature compensation
+//  ph.calibration(voltage, temperature);
   return phValue;
 }
 
@@ -54,20 +54,20 @@ float readTds() {
 
 void pump(String readInput) {
   if (readInput == "ph up\n") {
-    digitalWrite(phUp, HIGH);
+    digitalWrite(phUp, LOW);
   }
   else if (readInput == "ph down\n") {
-    digitalWrite(phDown, HIGH);
+    digitalWrite(phDown, LOW);
   }
   else if (readInput == "tds up\n") {
-    digitalWrite(tdsUp, HIGH);
+    digitalWrite(tdsUp, LOW);
   }
   else if (readInput == "tds down\n") {
-    digitalWrite(tdsDown, HIGH);
+    digitalWrite(tdsDown, LOW);
   }
   else if (readInput == "t\n") {
     for (int i = 0; i < 4; i++) {
-      digitalWrite(pumpMode[i], LOW);
+      digitalWrite(pumpMode[i], HIGH);
     }
   }
 }
@@ -78,12 +78,12 @@ void loop()
     readInput = Serial.readString();
     pump(readInput);
   }
-
-  if (readInput == "t\n") {
+  if (readInput == "monitor");
+  else if (readInput == "t\n") {
     return;
   }
 
-  if (millis() - timer > 300) {
+  if (millis() - timer > 1000) {
     timer = millis ();
     phValue = readPh();
     tdsValue = readTds();
