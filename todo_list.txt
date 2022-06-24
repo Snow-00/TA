@@ -2,6 +2,7 @@ FUZZY
 bikin kontrol fuzzy di arduino
 bikin integrasi output fuzzy ke relay
 masukin codingan tama sama mek
+bikin coding nrima data dari sensor mek dari thingspeak
 bikin coding pengiriman data sensor ke thingspeak di arduino
 * rapiin coding arduino pake file header
 
