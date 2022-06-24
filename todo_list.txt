@@ -1,0 +1,13 @@
+FUZZY
+bikin kontrol fuzzy di arduino
+bikin integrasi output fuzzy ke relay
+masukin codingan tama sama mek
+bikin coding pengiriman data sensor ke thingspeak di arduino
+* rapiin coding arduino pake file header
+
+JST
+bikin kontrol jst di jetson
+bikin integrasi output jst ke relay di arduino
+masukin codingan tama sama mek
+bikin coding kirim data sensor lewat python ke thingspeak
+* rapiin coding arduino dan python
