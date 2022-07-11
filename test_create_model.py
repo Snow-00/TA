@@ -13,8 +13,8 @@ def create_model(x, y, z):
     out2 = keras.layers.Dense(1)(layer)
 
     model = keras.Model(inputs=inputs, outputs=[out1, out2])
-    print((model.weights))
-    model.summary()
+    # print((model.weights))
+    # model.summary()
     model.compile(optimizer='adam', loss='mse')
     model.fit(x,
               [y, z],
@@ -36,8 +36,10 @@ x_test = dataset[train_data:,:12]
 x_test = np.expand_dims(x_test, axis=1)
 
 model = create_model(x_train, y_train, z_train)
-output1, output2 = model.predict(x_test[0])
-print((output1[0][0]))
+# print(x_test[0])
+# print(x_test[0].shape)
+output = np.array(model.predict(x_test[0]))
+print(output.shape)
 
 
 # y_pred = model.predict(x_test).flatten()

@@ -1,36 +1,24 @@
-FUZZY
-nambah koding ultrasonik
-bikin kontrol fuzzy di arduino
-bikin integrasi output fuzzy ke motor driver (relay)
-masukin codingan tama sama mek
-bikin coding nrima data dari sensor mek dari thingspeak
-bikin coding pengiriman data sensor ke thingspeak di arduino
-* rapiin coding arduino pake file header
-
-keuntungan:
-bikin koding kontrol nya lebih jelas
-engga perlu dataset
-
-kekurangan:
-ganti elka (jetson tx ilang, nambah esp, pake motor driver)
-nambah koding nerima dr thingspeak di arduino
-nambah koding kirim ke thingspeak di arduino
-pny mek susah buat pake fuzzy
-
-
 JST
-nambah koding baca ultrasonik
-bikin kontrol jst di jetson
-bikin integrasi output jst ke relay di arduino
+nambah koding baca ultrasonik (oke)
+bikin kontrol jst di jetson (oke)
+bikin integrasi output jst ke relay di arduino (oke)
+integrasi input sensor ke jst (oke)
+bikin coding kirim data sensor lewat python ke thingspeak (oke)
+bikin kondisi aksi di arduino (oke)
+bikin dataset
 masukin codingan tama sama mek
-bikin coding kirim data sensor lewat python ke thingspeak
 * rapiin coding arduino dan python
 
-keuntungan:
-ga perlu ganti elka
-engga nambah koding nrima / kirim dr thingspeak
-bs satu sama mek
+MUST DO NOW
+-level minimal bak buat nyemprot
+-algoritma biar aktuator mek jalan wkt campuran siap dipake blm (oke)
+-coding dataset blm bener
+-blm training
+-koding gabungan arduino blm kelar (kurang punya eno)
+-codingan timer mek (oke)
 
-kekurangan:
-bikin koding kontrol nya masih ga jelas
-perlu dataaset
+
+NB:
+sensor baca terus
+aktuator mek nunggu aktuator ku slesai
+ambil dataset awal smua nyala trus kalo 1 param dah slesai brarti 1 aktuator mati
