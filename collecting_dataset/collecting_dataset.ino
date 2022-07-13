@@ -5,11 +5,12 @@
 #define phPin A0          // the pH meter Analog output is connected with the Arduino’s Analog
 #define TdsSensorPin A1
 #define echoPin 2
-#define trigPin 3
+#define pingPin 3
 
-#define phDown 4
-#define tdsUp 5
-#define water 6
+#define phDown 32
+#define tdsUp 34
+#define water 35
+#define mixer 33
 
 DFRobot_PH ph;
 GravityTDS gravityTds;
@@ -23,14 +24,12 @@ unsigned long timer;
 
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(115200);
   gravityTds.setPin(TdsSensorPin);
   gravityTds.setAref(5.0);  //reference voltage on ADC, default 5.0V on Arduino UNO
   gravityTds.setAdcRange(1024);  //1024 for 10bit ADC;4096 for 12bit ADC
   gravityTds.begin();  //initialization
   ph.begin();
-  pinMode(trigPin, OUTPUT);
-  pinMode(echoPin, INPUT);
 
   for (int i = 0; i < 3; i++) {
     pinMode(pumpMode[i], OUTPUT);
@@ -97,6 +96,7 @@ void loop()
   // get input command
   if (Serial.available() > 1) {
     readInput = Serial.readString();
+//    Serial.println(readInput);/
     indexComma = readInput.lastIndexOf(',');
     len = readInput.length();
     command = readInput.substring(0, indexComma);
@@ -111,7 +111,7 @@ void loop()
   }
 
   // print sensor data
-  if (millis() - timer > 300) {
+  if (millis() - timer > 1000) {
     timer = millis ();
     phValue = readPh();
     tdsValue = readTds();
