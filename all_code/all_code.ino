@@ -3,13 +3,6 @@
 #include "BuckConverter.h"
 #include <EEPROM.h>
 
-// converter sensors
-#define v_PV  A0
-#define i_PV  A1
-#define v_Bat A2
-#define i_Bat A3
-#define i_Load A4
-
 float 
 levelVal, 
 phVal, 
@@ -22,8 +15,11 @@ currentPV,
 currentBAT,
 currentLOAD,
 socBat,
-chgVoltage      = 13.000,
-voltageThreshold= 1.5000;
+dt,
+chargeVoltage      = 14.700,
+voltageThresh= 1.5000;
+
+int PWM;
 
 int 
 indexComma, 
@@ -34,7 +30,7 @@ String
 command, 
 readInput;
 
-unsigned long timer;
+unsigned long timer, timerBat;
 
 void setup()
 {
@@ -43,6 +39,7 @@ void setup()
   initEnv();
   initBuck();
   timer = millis();
+  timerBat = millis();
 }
 
 void loop()
@@ -58,6 +55,23 @@ void loop()
     driveAct(command, cond);
   }
 
+  currentPV = readCurrentPV();
+  currentBAT = readCurrentBAT();
+  currentLOAD = readCurrentLOAD();
+  
+  voltagePV   = readVoltagePV();
+  voltageBAT  = readVoltageBat();
+  dt = (millis() - timerBat) / 1000; //Time in second
+  socBat = readSOC(currentBAT, currentLOAD, dt);
+  timerBat = millis();
+  relay(socBat);
+
+  if(voltagePV < voltageBAT + voltageThresh) PWM = 0;
+  if(voltageBAT < chargeVoltage) PWM++; 
+  if(voltageBAT > chargeVoltage) PWM--;
+
+  PWM = PWM_Modulation(voltagePV, voltageBAT, PWM);
+  
   if (millis() - timer > 300) {
     timer = millis ();
     phVal = readPh();
@@ -66,20 +80,6 @@ void loop()
 
     humidVal = readHumid();
     tempVal = readTemp();
-
-    voltagePV   = readVoltage(v_PV);
-    currentPV   = readCurrent(i_PV);
-    voltageBAT  = readVoltage(v_Bat);
-    currentBAT  = readCurrent(i_Bat);
-    currentLOAD = readCurrent(i_Load);
-    socBat = readSOC(currentBAT, currentLOAD);
-    relay(socBat);
-
-    if(voltagePV < voltageBAT + voltageThreshold) OCR4C = 0;
-    if(voltageBAT < chgVoltage) OCR4C++; 
-    if(voltageBAT > chgVoltage) OCR4C--;
-
-    OCR4C = constrain(OCR4C,15,300);
     
     Serial.print(phVal, 2);
     Serial.print(",");
