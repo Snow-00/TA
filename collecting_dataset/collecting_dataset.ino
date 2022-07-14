@@ -2,10 +2,11 @@
 #include "GravityTDS.h"
 #include <EEPROM.h>
 
-#define phPin A0          // the pH meter Analog output is connected with the Arduino’s Analog
-#define TdsSensorPin A1
-#define echoPin 2
-#define pingPin 3
+#define phPin A9          // the pH meter Analog output is connected with the Arduino’s Analog
+#define TdsSensorPin A10
+#define pingPin 48
+
+#define ledPin 2
 
 #define phDown 32
 #define tdsUp 34
@@ -16,7 +17,7 @@ DFRobot_PH ph;
 GravityTDS gravityTds;
 
 float duration, levelValue, voltage, phValue, tdsValue, temperature = 25;
-int pumpMode[] = {phDown, tdsUp, water};
+int pumpMode[] = {phDown, tdsUp, mixer, water};
 int indexComma, len, cond, totalLevel = 27;
 
 String command, readInput = "all,1\n";
@@ -31,10 +32,12 @@ void setup()
   gravityTds.begin();  //initialization
   ph.begin();
 
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 4; i++) {
     pinMode(pumpMode[i], OUTPUT);
     digitalWrite(pumpMode[i], HIGH);
   }
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, LOW);
   timer = millis ();
 }
 
@@ -42,7 +45,7 @@ void setup()
 float readPh() {
   voltage = analogRead(phPin) / 1024.0 * 5000; // read the voltage
   phValue = ph.readPH(voltage, temperature); // convert voltage to pH with temperature compensation
-//  ph.calibration(voltage, temperature);
+  //  ph.calibration(voltage, temperature);
   return phValue;
 }
 
@@ -67,7 +70,7 @@ float readLevel() {
 
   pinMode(pingPin, INPUT);
   duration = pulseIn(pingPin, HIGH);
-  
+
   levelValue = duration * 0.017;
   levelValue = totalLevel - levelValue;
   return levelValue;
@@ -84,8 +87,11 @@ void pump(String readInput, int state) {
   else if (readInput == "water") {
     digitalWrite(water, state);
   }
+  else if (readInput == "led") {
+    digitalWrite(ledPin, state);
+  }
   else if (readInput == "all") {
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 3; i++) {
       digitalWrite(pumpMode[i], state);
     }
   }
@@ -96,15 +102,15 @@ void loop()
   // get input command
   if (Serial.available() > 1) {
     readInput = Serial.readString();
-//    Serial.println(readInput);/
+    //    Serial.println(readInput);/
     indexComma = readInput.lastIndexOf(',');
     len = readInput.length();
     command = readInput.substring(0, indexComma);
     cond = readInput.substring(indexComma + 1, len).toInt();
-    
+
     pump(command, cond);
   }
-  
+
   if (readInput == "monitor");
   else if (readInput == "all,1\n") {
     return;
@@ -116,7 +122,7 @@ void loop()
     phValue = readPh();
     tdsValue = readTds();
     levelValue = readLevel();
-    
+
     Serial.print(phValue, 2);
     Serial.print(",");
     Serial.print(tdsValue, 2);

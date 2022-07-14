@@ -5,7 +5,7 @@ from datetime import datetime
 
 arduino_port = "/dev/ttyACM0" #serial port of Arduino
 baud = 115200 #arduino uno runs at 9600 baud
-fileName="dataset_test.csv" #name of the CSV file generated
+fileName="dataset_all.csv" #name of the CSV file generated
 actuator = ["ph down", "tds up"] # command actuator
 
 ser = serial.Serial(port=arduino_port, baudrate=baud)
@@ -36,8 +36,8 @@ while True:
     # while any actuator on
     while command != "all,1\n":
         # input data sensor 
-        data = str(ser.readline(), "utf-8")
-        data = data.strip("\r\n").split(',')
+        data_text = str(ser.readline(), "utf-8").strip("\r\n")
+        data = data_text.split(',')
         data = np.array(data, dtype='float')
 
         counter = round((datetime.now() - prev_time).total_seconds(), 2)
@@ -66,8 +66,8 @@ while True:
         
         ser.write(command.encode())
         sleep(2)
-        data = f"{data},{counter_arr[0]},{counter_arr[1]}"
-        # file.write(data + "\n") #write data with a newline
+        data = f"{data_text},{counter_arr[0]},{counter_arr[1]}"
+        file.write(data + "\n") #write data with a newline
         print(data)
     
     file.close()
