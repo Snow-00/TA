@@ -4,7 +4,7 @@
 
 #define phPin A9          // the pH meter Analog output is connected with the Arduino’s Analog
 #define TdsSensorPin A10
-#define pingPin 48
+#define pingPin 50
 
 #define ledPin 2
 
@@ -16,7 +16,7 @@
 DFRobot_PH ph;
 GravityTDS gravityTds;
 
-float duration, levelValue, voltage, phValue, tdsValue, temperature = 25;
+float duration, levelValue, prevLevel, voltage, phValue, tdsValue, temperature = 25;
 int pumpMode[] = {phDown, tdsUp, mixer, water};
 int indexComma, len, cond, totalLevel = 27;
 
@@ -70,9 +70,19 @@ float readLevel() {
 
   pinMode(pingPin, INPUT);
   duration = pulseIn(pingPin, HIGH);
-
   levelValue = duration * 0.017;
   levelValue = totalLevel - levelValue;
+  if (prevLevel == 0) {
+    prevLevel = levelValue;
+    return levelValue;
+  }
+  
+  if (abs(levelValue-prevLevel) > 1.5) {
+    levelValue = prevLevel;
+  }
+  else {
+    prevLevel = levelValue;
+  }
   return levelValue;
 }
 
@@ -90,8 +100,11 @@ void pump(String readInput, int state) {
   else if (readInput == "led") {
     digitalWrite(ledPin, state);
   }
+  else if (readInput == "mixer") {
+    digitalWrite(mixer, state);
+  }
   else if (readInput == "all") {
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
       digitalWrite(pumpMode[i], state);
     }
   }

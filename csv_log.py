@@ -5,8 +5,8 @@ from datetime import datetime
 
 arduino_port = "/dev/ttyACM0" #serial port of Arduino
 baud = 115200 #arduino uno runs at 9600 baud
-fileName="dataset_all.csv" #name of the CSV file generated
-actuator = ["ph down", "tds up"] # command actuator
+fileName="dataset_all_2.csv" #name of the CSV file generated
+actuator = ["ph down", "tds up", "water"] # command actuator
 
 ser = serial.Serial(port=arduino_port, baudrate=baud)
 print("Connected to Arduino port:" + arduino_port)
@@ -20,7 +20,7 @@ while True:
     try:
         sp = input_sp.split(",")
         sp = np.array(sp, dtype='float')
-        print(f"target pH: {sp[0]}; target tds: {sp[1]}")
+        print(f"target pH: {sp[0]}; target tds: {sp[1]}; target level: {sp[2]}")
     except:
         print("wrong input, try again!")
         continue
@@ -45,13 +45,21 @@ while True:
         
         # check whether the setpoint has been reached / not
         if data[0] <= sp[0]:
-            command = "ph down,1\n"
+            ser.write("ph down,1\n".encode())
             counter_arr = np.array([0, counter])
+        else:
+            ser.write("ph down,0\n".encode())
+            counter_arr = np.array([counter, counter])
+            
         if data[1] >= sp[1]:
-            command = "tds up,1\n"
+            ser.write("tds up,1\n".encode())
             counter_arr = np.array([counter, 0])
-        if data[0]<=sp[0] and data[1]>=sp[1]:
-            command = "all,1\n"
+        else:
+            ser.write("tds up,0\n".encode())
+            counter_arr = np.array([counter, counter])
+
+        if data[2] >= sp[2]:
+            ser.write("all,1\n".encode())
             counter_arr = np.array([0, 0])
 
         # if counter_arr[0] >= sp[0]:
@@ -64,7 +72,6 @@ while True:
         #     command = "all,1\n"
         #     counter_arr = np.array([0, 0])
         
-        ser.write(command.encode())
         sleep(2)
         data = f"{data_text},{counter_arr[0]},{counter_arr[1]}"
         file.write(data + "\n") #write data with a newline
