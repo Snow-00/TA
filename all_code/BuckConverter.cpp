@@ -7,19 +7,19 @@ pwmMaxLimited     = 0,
 pwmMax            = 0,
 avgCount = 100;
 
-float qtot, dsoc, soc = 50;
+float qtot, dsoc, soc = 93;
   
 float
 PWM_MaxDC         = 97.0000,
-chgVoltage        = 14.700,
+chgVoltage        = 14.400,
 voltageThreshold  = 1.5000;
 
 void initBuck() {
-  TCCR4A  = 0;
-  TCCR4B  = 0;
-  TCNT4   = 0;
-  TCCR4A = _BV(COM4C1) | _BV(WGM41);          
-  TCCR4B = _BV(WGM43) | _BV(CS40);            
+  TCCR5A  = 0;
+  TCCR5B  = 0;
+  TCNT5   = 0;
+  TCCR5A = _BV(COM5C1) | _BV(WGM51);          
+  TCCR5B = _BV(WGM53) | _BV(CS50);            
   ICR4=TOP;                                   
 
   pwmMax = TOP-1;
@@ -29,22 +29,22 @@ void initBuck() {
   pinMode(chargePin, OUTPUT); //Relay charge//
   pinMode(dischargePin, OUTPUT); //Relay discharge
   
-  digitalWrite(chargePin, LOW); //NC//
-  digitalWrite(dischargePin, HIGH); //NC
+  digitalWrite(chargePin, HIGH); // high = connected
+  digitalWrite(dischargePin, LOW); // low = batt
 }
 
 void relay(float soc){
   if (soc >= 100) {
-    digitalWrite(chargePin, HIGH);      //cutoff charging
+    digitalWrite(chargePin, LOW);      //cutoff charging
   }
   else if (soc <= 95) {
-    digitalWrite(chargePin, LOW);       //charging battery
+    digitalWrite(chargePin, HIGH);       //charging battery
   }
   if (soc >= 60) {
-    digitalWrite(dischargePin, HIGH);     //discharging battery
+    digitalWrite(dischargePin, LOW);     //discharging battery
   }
   else if (soc <= 20) {
-    digitalWrite(dischargePin, LOW);      //cutoff discharging from battery (use PLN supply)
+    digitalWrite(dischargePin, HIGH);      //cutoff discharging from battery (use PLN supply)
   } 
 }
 
@@ -57,12 +57,13 @@ void predictivePWM(float voltagePV, float voltageBAT){
 int PWM_Modulation(float voltagePV, float voltageBAT, int PWM){
   predictivePWM(voltagePV, voltageBAT);                                                       
   PWM = constrain(PWM,PPWM,pwmMaxLimited);
-  OCR4C = PWM;
+  OCR5C = PWM;
   return PWM;
 }
 
 float readVoltagePV() {
-  float VS, voltage;    
+  float VS, voltage; 
+  VS=0;   
    for(int i = 0; i<avgCount; i++) {
     VS = VS + ((analogRead(v_PV) * 5.0) / 1024.0);
   }
@@ -71,7 +72,8 @@ float readVoltagePV() {
 }
 
 float readVoltageBat() {
-  float VS, voltage;    
+  float VS, voltage; 
+  VS=0;   
    for(int i = 0; i<avgCount; i++) {
     VS = VS + ((analogRead(v_Bat) * 5.0) / 1024.0);
   }
@@ -81,30 +83,33 @@ float readVoltageBat() {
 
 float readCurrentPV() {
   float CS, current; 
+  CS=0;
   for(int i = 0; i<avgCount; i++) {
     CS = CS + ((analogRead(i_PV) * 5.0) / 1024.0);
   }
-  current  = (2.50 - (CS/avgCount)) / 0.100;
+  current  = (2.473 - (CS/avgCount)) / 0.100;
   if (current < 0) current = 0;
-  return current;
+  return current * 100;
 }
 
 float readCurrentBAT() {
   float CS, current;     
+  CS=0;
   for(int i = 0; i<avgCount; i++) {
     CS = CS + ((analogRead(i_Bat) * 5.0) / 1024.0);
   }
-  current  = (2.50 - (CS/avgCount)) / 0.100;
+  current  = (2.455 - (CS/avgCount)) / 0.100;
   if (current < 0) current = 0;
   return current;
 }
 
 float readCurrentLOAD() {
   float CS, current;     
+  CS=0;
   for(int i = 0; i<avgCount; i++) {
     CS = CS + ((analogRead(i_Load) * 5.0) / 1024.0);
   }
-  current  = (2.46 - (CS/avgCount)) / 0.100;
+  current  = (2.42 - (CS/avgCount)) / 0.100;
   if (current < 0) current = 0;
   return current;
 }

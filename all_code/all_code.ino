@@ -16,7 +16,7 @@ currentBAT,
 currentLOAD,
 socBat,
 dt,
-chargeVoltage      = 14.700,
+chargeVoltage      = 14.4,
 voltageThresh= 1.5000;
 
 int PWM;
@@ -34,7 +34,7 @@ unsigned long timer, timerBat;
 
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(115200);
   initNutrient();
   initEnv();
   initBuck();
@@ -62,6 +62,7 @@ void loop()
   voltagePV   = readVoltagePV();
   voltageBAT  = readVoltageBat();
   dt = (millis() - timerBat) / 1000; //Time in second
+  Serial.println(dt,6);
   socBat = readSOC(currentBAT, currentLOAD, dt);
   timerBat = millis();
   relay(socBat);
@@ -72,7 +73,7 @@ void loop()
 
   PWM = PWM_Modulation(voltagePV, voltageBAT, PWM);
   
-  if (millis() - timer > 300) {
+  if (millis() - timer > 1000) {
     timer = millis ();
     phVal = readPh();
     tdsVal = readTds();
@@ -101,6 +102,6 @@ void loop()
     Serial.print(", ");
     Serial.print(currentLOAD, 2); 
     Serial.print(", ");
-    Serial.println(socBat);
+    Serial.println(socBat,5);
   }
 }

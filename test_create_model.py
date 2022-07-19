@@ -3,6 +3,11 @@ import matplotlib.pyplot as plt
 from tensorflow import keras
 from pandas import read_csv
 
+csv_file = "xxx.csv"
+TOTAL_COL = 5
+OUT_COL = 2
+input_col = TOTAL_COL - OUT_COL
+
 def create_model(x, y, z):
     inputs = keras.Input(shape=(12))
     layer = keras.layers.Dense(16, activation='relu')(inputs)
@@ -23,16 +28,17 @@ def create_model(x, y, z):
     
     return model
 
-dataframe = read_csv("housing.csv", delim_whitespace=True, header=None)
+dataframe = read_csv(csv_file, delim_whitespace=True, header=None)
 dataset = dataframe.values
 
 train_data = int(len(dataset) * 0.8)
-x_train = dataset[:train_data,:12]
-y_train = dataset[:train_data,12]
-z_train = dataset[:train_data,13]
-a_train = dataset[:train_data,12:]
+x_train = dataset[:train_data, :input_col]
+y_train = dataset[:train_data, input_col]
+z_train = dataset[:train_data, input_col+1]
 
-x_test = dataset[train_data:,:12]
+x_test = dataset[train_data:, :input_col]
+y_test = dataset[train_data:, input_col]
+z_test = dataset[train_data:, input_col+1]
 x_test = np.expand_dims(x_test, axis=1)
 
 model = create_model(x_train, y_train, z_train)

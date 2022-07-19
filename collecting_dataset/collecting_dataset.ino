@@ -1,5 +1,6 @@
 #include "DFRobot_PH.h"
 #include "GravityTDS.h"
+#include "BuckConverter.h"
 #include <EEPROM.h>
 
 #define phPin A9          // the pH meter Analog output is connected with the Arduino’s Analog
@@ -16,12 +17,27 @@
 DFRobot_PH ph;
 GravityTDS gravityTds;
 
-float duration, levelValue, prevLevel, voltage, phValue, tdsValue, temperature = 25;
+float
+duration,
+levelValue,
+prevLevel,
+voltage,
+phValue,
+tdsValue,
+temperature = 25,
+voltageBAT,
+currentLOAD,
+socBat,
+dt;
+
 int pumpMode[] = {phDown, tdsUp, mixer, water};
 int indexComma, len, cond, totalLevel = 27;
 
-String command, readInput = "all,1\n";
-unsigned long timer;
+String
+command,
+arrCmd[3],
+readInput = "all,1";
+unsigned long timer, timerBat;
 
 void setup()
 {
@@ -38,7 +54,10 @@ void setup()
   }
   pinMode(ledPin, OUTPUT);
   digitalWrite(ledPin, LOW);
+
+  initBuck();
   timer = millis ();
+  timerBat = millis();
 }
 
 // read pH sensor
@@ -76,8 +95,8 @@ float readLevel() {
     prevLevel = levelValue;
     return levelValue;
   }
-  
-  if (abs(levelValue-prevLevel) > 1.5) {
+
+  if (abs(levelValue - prevLevel) > 1.5) {
     levelValue = prevLevel;
   }
   else {
@@ -110,27 +129,58 @@ void pump(String readInput, int state) {
   }
 }
 
+void getInput() {
+  int countCmd = 0;
+  readInput = Serial.readString();
+  readInput.trim();
+
+  // Split the string into substrings
+  while (true)
+  {
+    int index = readInput.indexOf(';');
+    if (index == -1) // No space found
+    {
+      arrCmd[countCmd++] = readInput;
+      break;
+    }
+    arrCmd[countCmd++] = readInput.substring(0, index);
+    readInput = readInput.substring(index + 1);
+  }
+
+  for (int i = 0; i < countCmd; i++)
+  {
+    indexComma = arrCmd[i].lastIndexOf(',');
+    len = arrCmd[i].length();
+    command = arrCmd[i].substring(0, indexComma);
+    cond = arrCmd[i].substring(indexComma + 1, len).toInt();
+
+    pump(command, cond);
+  }
+}
+
 void loop()
 {
   // get input command
   if (Serial.available() > 1) {
-    readInput = Serial.readString();
-    //    Serial.println(readInput);/
-    indexComma = readInput.lastIndexOf(',');
-    len = readInput.length();
-    command = readInput.substring(0, indexComma);
-    cond = readInput.substring(indexComma + 1, len).toInt();
-
-    pump(command, cond);
+    getInput();
   }
 
   if (readInput == "monitor");
-  else if (readInput == "all,1\n") {
+  else if (readInput == "all,1") {
     return;
   }
 
+  currentLOAD = readCurrentLOAD();
+  voltageBAT  = readVoltageBat();
+  
+  dt = millis() - timerBat; //Time in second
+  dt = dt / 1000;
+  socBat = readSOC(currentLOAD, dt);
+  timerBat = millis();
+  relay(socBat);
+  
   // print sensor data
-  if (millis() - timer > 1000) {
+  if (millis() - timer > 300) {
     timer = millis ();
     phValue = readPh();
     tdsValue = readTds();
@@ -140,6 +190,12 @@ void loop()
     Serial.print(",");
     Serial.print(tdsValue, 2);
     Serial.print(",");
-    Serial.println(levelValue, 2);
+    Serial.print(levelValue, 2);
+    Serial.print(",");
+    Serial.print(voltageBAT, 2);
+    Serial.print(",");
+    Serial.print(currentLOAD, 2); 
+    Serial.print(",");
+    Serial.println(socBat,5);
   }
 }

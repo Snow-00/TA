@@ -5,14 +5,14 @@
 #include "DFRobot_PH.h"
 #include "GravityTDS.h"
 
-#define phPin A0          // the pH meter Analog output is connected with the Arduino’s Analog
-#define tdsPin A1
-#define echoPin 2
-#define trigPin 3
+#define phPin A9          // the pH meter Analog output is connected with the Arduino’s Analog
+#define tdsPin A10
+#define pingPin 50
 
-#define phDown 4
-#define tdsUp 5
-#define water 6
+#define phDown 32
+#define tdsUp 34
+#define water 35
+#define mixer 33
 
 void initNutrient();
 float readPh();

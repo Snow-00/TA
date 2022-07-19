@@ -35,7 +35,7 @@ unsigned long lastTimeSerial = 0;
 unsigned long timerDelaySerial = 1000; //1 detik
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   TCCR5A  = 0;
   TCCR5B  = 0;
   TCNT5   = 0;
@@ -48,24 +48,24 @@ void setup() {
   delay(500);
  
   pinMode(44, OUTPUT);       //PWM pin 44
-  pinMode(9, OUTPUT);        //Relay charge
-  pinMode(10, OUTPUT);       //Relay discharge
-  digitalWrite(9, LOW);        
-  digitalWrite(10, HIGH);        
+  pinMode(47, OUTPUT);        //Relay charge
+  pinMode(49, OUTPUT);       //Relay discharge
+  digitalWrite(47, LOW);        
+  digitalWrite(49, HIGH);        
 }
 
 void relay(float soc){
   if (soc >= 100) {
-    digitalWrite(9, HIGH);      //cutoff charging
+    digitalWrite(47, HIGH);      //cutoff charging
   }
   else if (soc <= 95) {
-    digitalWrite(9, LOW);       //charging battery
+    digitalWrite(47, LOW);       //charging battery
   }
   if (soc >= 60) {
-    digitalWrite(10, HIGH);     //discharging battery
+    digitalWrite(49, HIGH);     //discharging battery
   }
   else if (soc <= 20) {
-    digitalWrite(10, LOW);      //cutoff discharging from battery (use PLN supply)
+    digitalWrite(49, LOW);      //cutoff discharging from battery (use PLN supply)
   } 
 }
 
@@ -141,6 +141,7 @@ void loop() {
   voltagePV   = readVoltage(v_PV);
   voltageBAT  = readVoltage(v_Bat);
   dt = (millis() - timer) / 1000; //Time in second
+  Serial.println(dt,6);
   soc = readSOC(currentBAT, currentLOAD, dt);
   timer = millis();
   relay(soc);

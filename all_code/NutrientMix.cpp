@@ -7,11 +7,12 @@ GravityTDS gravityTds;
 float 
 duration, 
 levelValue, 
+prevLevel,
 vPH, 
 phValue, 
 tdsValue;
 
-int pumpMode[] = {phDown, tdsUp, water};
+int pumpMode[] = {phDown, tdsUp, mixer, water};
 
 const int 
 totalLevel  = 27, 
@@ -23,10 +24,8 @@ void initNutrient() {
   gravityTds.setAdcRange(1024);  //1024 for 10bit ADC;4096 for 12bit ADC
   gravityTds.begin();  //initialization
   ph.begin();
-  pinMode(trigPin, OUTPUT);
-  pinMode(echoPin, INPUT);
 
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 4; i++) {
     pinMode(pumpMode[i], OUTPUT);
     digitalWrite(pumpMode[i], HIGH);
   }
@@ -52,16 +51,28 @@ float readTds() {
 // read level sensor
 float readLevel() {
   // sending trigger pulse
-  digitalWrite(trigPin, LOW);
+  pinMode(pingPin, OUTPUT);
+  digitalWrite(pingPin, LOW);
   delayMicroseconds(2);
-  digitalWrite(trigPin, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(trigPin, LOW);
+  digitalWrite(pingPin, HIGH);
+  delayMicroseconds(5);
+  digitalWrite(pingPin, LOW);
 
-  // get the distance value
-  duration = pulseIn(echoPin, HIGH);
-  levelValue = duration * 0.034 / 2;
+  pinMode(pingPin, INPUT);
+  duration = pulseIn(pingPin, HIGH);
+  levelValue = duration * 0.017;
   levelValue = totalLevel - levelValue;
+  if (prevLevel == 0) {
+    prevLevel = levelValue;
+    return levelValue;
+  }
+  
+  if (abs(levelValue-prevLevel) > 1.5) {
+    levelValue = prevLevel;
+  }
+  else {
+    prevLevel = levelValue;
+  }
   return levelValue;
 }
 
@@ -75,5 +86,13 @@ void pump(String readInput, int state) {
   }
   else if (readInput == "water") {
     digitalWrite(water, state);
+  }
+  else if (readInput == "mixer") {
+    digitalWrite(mixer, state);
+  }
+  else if (readInput == "all") {
+    for (int i = 0; i < 4; i++) {
+      digitalWrite(pumpMode[i], state);
+    }
   }
 }
