@@ -2,14 +2,21 @@ import serial
 import urllib.request
 import numpy as np
 from datetime import datetime
+from time import sleep
 from tensorflow import keras
 
 ARDUINO_PORT = "/dev/ttyACM0" # serial port of Arduino
 OTHER_PORT = "/dev/"
-BAUD = 9600 # arduino uno runs at 9600 baud
-# OTHER_BAUD = 
+BAUD = 115200 # arduino uno runs at 115200 baud
+
 LED_ON = 64800
 LED_OFF = 86400 - LED_ON
+
+# set points
+SP_HUMID = 85
+SP_TEMP = 23
+SP_PH = 5.75
+SP_TDS = 725
 
 NUTRIENT_MODEL_FILE = "xxx.h5" # name of the saved nutrient model file
 ENV_MODEL_FILE = "env_collect.h5" # name of the saved env model file
@@ -19,12 +26,13 @@ env_model = keras.models.load_model(ENV_MODEL_FILE)
 command_nutrient = ["ph down", "tds up"]
 command_env = ["pump", "peltier"]
 
-nn_nutrient = 0
-nn_env = 0
+nn_nutrient = np.array([0])
+nn_env = np.array([0])
 
 ser = serial.Serial(ARDUINO_PORT, BAUD)
-ser2 = serial.Serial(OTHER_PORT, BAUD)
 print("Connected to Arduino port:" + ARDUINO_PORT)
+other_ser = serial.Serial(OTHER_PORT, BAUD)
+print("Connected to Arduino port:" + OTHER_PORT)
 
 # turn on led first time
 led_state = 1
@@ -37,9 +45,9 @@ def create_arr(part_data_arr):
 
     return arr
 
-def send_data(arr):
+def send_data(arr, index):
     for n in range(len(arr)):
-        urllib.request.urlopen(f'https://api.thingspeak.com/update?api_key=GPFMAB99YI1AZDY9&field{n+1}={arr[n]}')
+        urllib.request.urlopen(f'https://api.thingspeak.com/update?api_key=GPFMAB99YI1AZDY9&field{n+index}={arr[n]}')
 
 def en_actuator(command, output):
     act = np.array([0, 0])
@@ -72,19 +80,32 @@ def dis_actuator(command, output, time):
     return act
 
 while True: 
+    # open second arduino
+    other_ser.open()
+    sleep(1)
+
     try:
-        # get new data sensor from arduino
+        # get new data sensor from second arduino
+        data_str = str(other_ser.readline(), "utf-8").strip("\r\n")
+        data_arr_ntr = data_str.split(",")
+        arr_nutrient = create_arr(data_arr_ntr[:])
+
+        # get new data sensor from main arduino
         data_str = str(ser.readline(), "utf-8").strip("\r\n")
-        data_arr = data_str.split(",")
-        arr_env = create_arr(data_arr[:2])
-        arr_nutrient = create_arr(data_arr[2:5])
+        data_arr_env = data_str.split(",")
+        arr_env = create_arr(data_arr_env[:2])
+        level = float(data_arr_env[2])
     
     except:
         urllib.request.urlopen('https://api.thingspeak.com/update?api_key=GPFMAB99YI1AZDY9&field1=1')
         continue
+    
+    # close second arduino
+    other_ser.close()
 
     # send data to thingspeak
-    send_data(data_arr)
+    send_data(data_arr_env, 1)
+    send_data(data_arr_ntr, 7)
 
     # timer for the led
     if led_state:
