@@ -5,8 +5,6 @@
 
 float 
 levelVal, 
-phVal, 
-tdsVal,
 humidVal,
 tempVal,
 voltagePV,
@@ -28,6 +26,7 @@ cond;
 
 String 
 command, 
+arrCmd[3],
 readInput;
 
 unsigned long timer, timerBat;
@@ -42,17 +41,40 @@ void setup()
   timerBat = millis();
 }
 
+void getInput() {
+  int countCmd = 0;
+  readInput = Serial.readString();
+  readInput.trim();
+
+  // Split the string into substrings
+  while (true)
+  {
+    int index = readInput.indexOf(';');
+    if (index == -1) // No space found
+    {
+      arrCmd[countCmd++] = readInput;
+      break;
+    }
+    arrCmd[countCmd++] = readInput.substring(0, index);
+    readInput = readInput.substring(index + 1);
+  }
+
+  for (int i = 0; i < countCmd; i++)
+  {
+    indexComma = arrCmd[i].lastIndexOf(',');
+    len = arrCmd[i].length();
+    command = arrCmd[i].substring(0, indexComma);
+    cond = arrCmd[i].substring(indexComma + 1, len).toInt();
+
+    pump(command, cond);
+    driveAct(command, cond);
+  }
+}
+
 void loop()
 {
   if (Serial.available() > 1) {
-    readInput = Serial.readString();
-    indexComma = readInput.lastIndexOf(',');
-    len = readInput.length();
-    command = readInput.substring(0, indexComma);
-    cond = readInput.substring(indexComma + 1, len).toInt();
-    
-    pump(command, cond);
-    driveAct(command, cond);
+    getInput();
   }
 
   currentPV = readCurrentPV();
@@ -75,32 +97,20 @@ void loop()
   
   if (millis() - timer > 1000) {
     timer = millis ();
-    phVal = readPh();
-    tdsVal = readTds();
     levelVal = readLevel();
 
     humidVal = readHumid();
     tempVal = readTemp();
     
-    Serial.print(phVal, 2);
-    Serial.print(",");
-    Serial.print(tdsVal, 2);
-    Serial.print(",");
-    Serial.print(levelVal, 2);
-    Serial.print(",");
     Serial.print(humidVal, 2);
     Serial.print(",");
     Serial.print(tempVal, 2);
     Serial.print(",");
+    Serial.print(levelVal, 2);
+    Serial.print(",");
     Serial.print(voltagePV, 2);
     Serial.print(", ");
     Serial.print(voltageBAT, 2);
-    Serial.print(", ");
-    Serial.print(currentPV, 2);
-    Serial.print(", ");
-    Serial.print(currentBAT, 2);
-    Serial.print(", ");
-    Serial.print(currentLOAD, 2); 
     Serial.print(", ");
     Serial.println(socBat,5);
   }

@@ -5,7 +5,6 @@
 #include "OneWire.h"
 #include "DallasTemperature.h"
 #include "DHT.h"
-#include "RBDdimmer.h"
 
 // env sensors pins
 #define ONE_WIRE_BUS 30
@@ -19,7 +18,7 @@
 // env actuator pin
 #define R_PWM 4
 #define L_PWM 5
-#define R_EN 1
+#define R_EN 6
 #define L_EN 7
 #define pinPump 3
 #define ledPin  2
