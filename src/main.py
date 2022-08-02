@@ -12,6 +12,10 @@ BAUD = 115200 # arduino uno runs at 115200 baud
 LED_ON = 64800
 LED_OFF = 86400 - LED_ON
 
+<<<<<<< HEAD
+NUTRIENT_MODEL_FILE = "NutrientModel" # name of the saved nutrient model file
+ENV_MODEL_FILE = "EnvModel" # name of the saved env model file
+=======
 # set points
 SP_HUMID = 85
 SP_TEMP = 23
@@ -20,6 +24,7 @@ SP_TDS = 725
 
 NUTRIENT_MODEL_FILE = "xxx.h5" # name of the saved nutrient model file
 ENV_MODEL_FILE = "env_collect.h5" # name of the saved env model file
+>>>>>>> b2fcfa4ed3e62b9edc93629c40873bfa29da44a8
 nutrient_model = keras.models.load_model(NUTRIENT_MODEL_FILE)
 env_model = keras.models.load_model(ENV_MODEL_FILE)
 
