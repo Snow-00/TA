@@ -12,19 +12,14 @@ BAUD = 115200 # arduino uno runs at 115200 baud
 LED_ON = 64800
 LED_OFF = 86400 - LED_ON
 
-<<<<<<< HEAD
-NUTRIENT_MODEL_FILE = "NutrientModel" # name of the saved nutrient model file
-ENV_MODEL_FILE = "EnvModel" # name of the saved env model file
-=======
 # set points
 SP_HUMID = 85
 SP_TEMP = 23
 SP_PH = 5.75
 SP_TDS = 725
 
-NUTRIENT_MODEL_FILE = "xxx.h5" # name of the saved nutrient model file
-ENV_MODEL_FILE = "env_collect.h5" # name of the saved env model file
->>>>>>> b2fcfa4ed3e62b9edc93629c40873bfa29da44a8
+NUTRIENT_MODEL_FILE = "NutrientModel" # name of the saved nutrient model file
+ENV_MODEL_FILE = "EnvModel" # name of the saved env model file
 nutrient_model = keras.models.load_model(NUTRIENT_MODEL_FILE)
 env_model = keras.models.load_model(ENV_MODEL_FILE)
 
@@ -52,7 +47,7 @@ def create_arr(part_data_arr):
 
 def send_data(arr, index):
     for n in range(len(arr)):
-        urllib.request.urlopen(f'https://api.thingspeak.com/update?api_key=GPFMAB99YI1AZDY9&field{n+index}={arr[n]}')
+        urllib.request.urlopen(f'https://api.thingspeak.com/update?api_key=2NVLLP52G8WKFET1&field{n+index}={arr[n]}')
 
 def en_actuator(command, output):
     act = np.array([0, 0])
@@ -85,29 +80,33 @@ def dis_actuator(command, output, time):
     return act
 
 while True: 
-    # open second arduino
-    other_ser.open()
-    sleep(1)
-
     try:
+        # open second arduino
+        other_ser.open()
+        sleep(1)
+
         # get new data sensor from second arduino
         data_str = str(other_ser.readline(), "utf-8").strip("\r\n")
         data_arr_ntr = data_str.split(",")
         arr_nutrient = create_arr(data_arr_ntr[:])
+        arr_nutrient[0][0] = SP_PH - arr_nutrient[0][0]
+        arr_nutrient[0][1] = SP_TDS - arr_nutrient[0][1]
 
         # get new data sensor from main arduino
         data_str = str(ser.readline(), "utf-8").strip("\r\n")
         data_arr_env = data_str.split(",")
         arr_env = create_arr(data_arr_env[:2])
+        arr_env[0][0] = SP_HUMID - arr_env[0][0]
+        arr_env[0][1] = SP_TEMP - arr_env[0][1]
         level = float(data_arr_env[2])
+
+        # close second arduino
+        other_ser.close()
     
     except:
         urllib.request.urlopen('https://api.thingspeak.com/update?api_key=GPFMAB99YI1AZDY9&field1=1')
         continue
     
-    # close second arduino
-    other_ser.close()
-
     # send data to thingspeak
     send_data(data_arr_env, 1)
     send_data(data_arr_ntr, 7)

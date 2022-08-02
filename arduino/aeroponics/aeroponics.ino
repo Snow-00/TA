@@ -1,6 +1,5 @@
 #include "NutrientMix.h"
 #include "Env.h"
-#include "BuckConverter.h"
 #include <EEPROM.h>
 #define i_PV  A4
 #define v_PV  A5
@@ -10,6 +9,7 @@
 #define pwmPin 44
 #define chargePin 47
 #define dischargePin 49
+
 int
 PPWM              = 0,
 PWM               = 0,
@@ -21,13 +21,18 @@ avgCountVS        = 10,
 modeChg           = 0,
 modeDcg           = 0,
 input             = 0;
-float dt, qtot, dsoc, soc = 100;
+
+float 
+dt, 
+qtot, 
+dsoc, 
+soc = 100;
+
 float 
 levelVal, 
-phVal, 
-tdsVal,
 humidVal,
-tempVal,
+tempVal;
+
 float
 PWM_MaxDC         = 97.0000,
 voltagePV         = 0.0000,
@@ -54,11 +59,10 @@ cond;
 
 String 
 command, 
+arrCmd[3],
 readInput;
 
 unsigned long timer, timerBat;
-//unsigned long lastTimeSerial = 0;
-//unsigned long timerDelaySerial = 1000; //1 detik
 
 void setup()
 {
@@ -177,17 +181,40 @@ float readSOC(float currentBAT, float currentLOAD, float dt) {
 }
 
 
+void getInput() {
+  int countCmd = 0;
+  readInput = Serial.readString();
+  readInput.trim();
+
+  // Split the string into substrings
+  while (true)
+  {
+    int index = readInput.indexOf(';');
+    if (index == -1) // No space found
+    {
+      arrCmd[countCmd++] = readInput;
+      break;
+    }
+    arrCmd[countCmd++] = readInput.substring(0, index);
+    readInput = readInput.substring(index + 1);
+  }
+
+  for (int i = 0; i < countCmd; i++)
+  {
+    indexComma = arrCmd[i].lastIndexOf(',');
+    len = arrCmd[i].length();
+    command = arrCmd[i].substring(0, indexComma);
+    cond = arrCmd[i].substring(indexComma + 1, len).toInt();
+
+    pump(command, cond);
+    driveAct(command, cond);
+  }
+}
+
 void loop()
 {
   if (Serial.available() > 1) {
-    readInput = Serial.readString();
-    indexComma = readInput.lastIndexOf(',');
-    len = readInput.length();
-    command = readInput.substring(0, indexComma);
-    cond = readInput.substring(indexComma + 1, len).toInt();
-    
-    pump(command, cond);
-    driveAct(command, cond);
+    getInput();
   }
 
   currentPV = readCurrentPV();
@@ -198,10 +225,9 @@ void loop()
   voltageBAT  = readVoltage_BAT();
   dt = millis() - timerBat;
   dt = dt / 1000; //Time in secondsecond
-  Serial.println(dt,6);
-  socBat = readSOC(currentBAT, currentLOAD, dt);
+  soc = readSOC(currentBAT, currentLOAD, dt);
   timerBat = millis();
-  relay(socBat);
+  relay(soc);
 
   if (voltagePV < voltageBAT + voltageThreshold) PWM = 0;
   if (voltageBAT < chgVoltage) PWM++;
@@ -211,33 +237,21 @@ void loop()
   
   if (millis() - timer > 1000) {
     timer = millis ();
-    phVal = readPh();
-    tdsVal = readTds();
     levelVal = readLevel();
 
     humidVal = readHumid();
     tempVal = readTemp();
     
-    Serial.print(phVal, 2);
-    Serial.print(",");
-    Serial.print(tdsVal, 2);
-    Serial.print(",");
-    Serial.print(levelVal, 2);
-    Serial.print(",");
     Serial.print(humidVal, 2);
     Serial.print(",");
     Serial.print(tempVal, 2);
+    Serial.print(",");
+    Serial.print(levelVal, 2);
     Serial.print(",");
     Serial.print(voltagePV, 2);
     Serial.print(", ");
     Serial.print(voltageBAT, 2);
     Serial.print(", ");
-    Serial.print(currentPV, 2);
-    Serial.print(", ");
-    Serial.print(currentBAT, 2);
-    Serial.print(", ");
-    Serial.print(currentLOAD, 2); 
-    Serial.print(", ");
-    Serial.println(socBat,5);
+    Serial.println(soc,5);
   }
 }
