@@ -3,13 +3,16 @@ import numpy as np
 from time import sleep
 from datetime import datetime
 
-arduino_port = "/dev/ttyACM0" #serial port of Arduino
-baud = 115200 #arduino uno runs at 9600 baud
-fileName="../dataset/testing.csv" #name of the CSV file generated
+main_arduino_port = "/dev/ttyACM1" # serial port of Arduino Mega
+second_arduino = "/dev/ttyACM0"    # serial port of Arduino Uno
+baud = 115200 # arduino uno runs at 9600 baud
+fileName="../dataset/dataset_finish_amen.csv" #name of the CSV file generated
 actuator = ["ph down", "tds up", "water"] # command actuator
 
-ser = serial.Serial(port=arduino_port, baudrate=baud)
-print("Connected to Arduino port:" + arduino_port)
+ser = serial.Serial(port=main_arduino_port, baudrate=baud)
+print("Connected to Arduino port:" + main_arduino_port)
+other_ser = serial.Serial(port=second_arduino, baudrate=baud)
+print("Connected to Arduino port:" + second_arduino)
 file = open(fileName, "a")
 file.write("new iteration\n")
 
@@ -42,9 +45,9 @@ while True:
             break
 
     # reset arduino
-    ser.close()
+    other_ser.close()
     sleep(1)
-    ser.open()
+    other_ser.open()
     sleep(1)
     # ser.setDTR(False)
     # sleep(1)
@@ -53,8 +56,7 @@ while True:
     
     # input data sensor
     try:
-        ser.write("monitor\n".encode())
-        data_text = str(ser.readline(), "utf-8").strip("\r\n")
+        data_text = str(other_ser.readline(), "utf-8").strip("\r\n")
     except Exception as e:
         print(e)
         break
