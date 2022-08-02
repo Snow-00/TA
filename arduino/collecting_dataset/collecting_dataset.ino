@@ -1,6 +1,8 @@
 #include "DFRobot_PH.h"
 #include "GravityTDS.h"
 #include "BuckConverter.h"
+#include "MovingAverageFloat.h"
+#include "NewPing.h"
 #include <EEPROM.h>
 
 #define phPin A9          // the pH meter Analog output is connected with the Arduino’s Analog
@@ -16,6 +18,11 @@
 
 DFRobot_PH ph;
 GravityTDS gravityTds;
+NewPing sonar(pingPin, pingPin, 500);
+
+MovingAverageFloat <10> filterPH;
+MovingAverageFloat <10> filterTDS;
+MovingAverageFloat <10> filterLevel;
 
 float
 duration,
@@ -62,46 +69,51 @@ void setup()
 
 // read pH sensor
 float readPh() {
+  ph.begin();
   voltage = analogRead(phPin) / 1024.0 * 5000; // read the voltage
   phValue = ph.readPH(voltage, temperature); // convert voltage to pH with temperature compensation
-  //  ph.calibration(voltage, temperature);
+  phValue = filterPH.add(phValue);
   return phValue;
 }
 
 // read tds sensor
 float readTds() {
+  gravityTds.begin();
   gravityTds.setTemperature(temperature);  // set the temperature and execute temperature compensation
   gravityTds.update();  //sample and calculate
   tdsValue = gravityTds.getTdsValue();  // then get the value
-  //  tdsValue = tdsValue / 500;
+  tdsValue = filterTDS.add(tdsValue);
   return tdsValue;
 }
 
 // read level sensor
 float readLevel() {
   // sending trigger pulse
-  pinMode(pingPin, OUTPUT);
-  digitalWrite(pingPin, LOW);
-  delayMicroseconds(2);
-  digitalWrite(pingPin, HIGH);
-  delayMicroseconds(5);
-  digitalWrite(pingPin, LOW);
-
-  pinMode(pingPin, INPUT);
-  duration = pulseIn(pingPin, HIGH);
-  levelValue = duration * 0.017;
+  //  pinMode(pingPin, OUTPUT);
+  //  digitalWrite(pingPin, LOW);
+  //  delayMicroseconds(2);
+  //  digitalWrite(pingPin, HIGH);
+  //  delayMicroseconds(5);
+  //  digitalWrite(pingPin, LOW);
+  //
+  //  pinMode(pingPin, INPUT);
+  //  duration = pulseIn(pingPin, HIGH);
+  //  levelValue = duration * 0.017;
+  //  levelValue = totalLevel - levelValue;
+  levelValue = sonar.ping_cm();
   levelValue = totalLevel - levelValue;
-  if (prevLevel == 0) {
-    prevLevel = levelValue;
-    return levelValue;
-  }
-
-  if (abs(levelValue - prevLevel) > 1.5) {
-    levelValue = prevLevel;
-  }
-  else {
-    prevLevel = levelValue;
-  }
+  //  levelValue = filterLevel.add(levelValue);
+  //  if (prevLevel == 0) {
+  //    prevLevel = levelValue;
+  //    return levelValue;
+  //  }
+  //
+  //  if (abs(levelValue - prevLevel) > 1.5) {
+  //    levelValue = prevLevel;
+  //  }
+  //  else {
+  //    prevLevel = levelValue;
+  //  }
   return levelValue;
 }
 
@@ -109,12 +121,15 @@ float readLevel() {
 void pump(String readInput, int state) {
   if (readInput == "ph down") {
     digitalWrite(phDown, state);
+    digitalWrite(mixer, state);
   }
   else if (readInput == "tds up") {
     digitalWrite(tdsUp, state);
+    digitalWrite(mixer, state);
   }
   else if (readInput == "water") {
     digitalWrite(water, state);
+    digitalWrite(mixer, state);
   }
   else if (readInput == "led") {
     digitalWrite(ledPin, state);
@@ -123,7 +138,7 @@ void pump(String readInput, int state) {
     digitalWrite(mixer, state);
   }
   else if (readInput == "all") {
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 3; i++) {
       digitalWrite(pumpMode[i], state);
     }
   }
@@ -172,15 +187,15 @@ void loop()
 
   currentLOAD = readCurrentLOAD();
   voltageBAT  = readVoltageBat();
-  
+
   dt = millis() - timerBat; //Time in second
   dt = dt / 1000;
   socBat = readSOC(currentLOAD, dt);
   timerBat = millis();
   relay(socBat);
-  
+
   // print sensor data
-  if (millis() - timer > 300) {
+  if (millis() - timer > 1000) {
     timer = millis ();
     phValue = readPh();
     tdsValue = readTds();
@@ -190,12 +205,12 @@ void loop()
     Serial.print(",");
     Serial.print(tdsValue, 2);
     Serial.print(",");
-    Serial.print(levelValue, 2);
-    Serial.print(",");
-    Serial.print(voltageBAT, 2);
-    Serial.print(",");
-    Serial.print(currentLOAD, 2); 
-    Serial.print(",");
-    Serial.println(socBat,5);
+    Serial.println(levelValue, 2);
+//    Serial.print(",");
+//    Serial.print(voltageBAT, 2);
+//    Serial.print(",");
+//    Serial.print(currentLOAD, 2);
+//    Serial.print(",");
+//    Serial.println(socBat, 5);
   }
 }

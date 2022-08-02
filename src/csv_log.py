@@ -5,7 +5,7 @@ from datetime import datetime
 
 arduino_port = "/dev/ttyACM0" #serial port of Arduino
 baud = 115200 #arduino uno runs at 9600 baud
-fileName="dataset_final.csv" #name of the CSV file generated
+fileName="dataset_new_sp.csv" #name of the CSV file generated
 actuator = ["ph down", "tds up", "water"] # command actuator
 
 ser = serial.Serial(port=arduino_port, baudrate=baud)
@@ -33,6 +33,7 @@ while True:
 
     file = open(fileName, "a")
     prev_time = datetime.now()
+    file.write("new iteration\n")
     
     # while any actuator on
     while command != "all,1\n":
