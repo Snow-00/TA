@@ -1,6 +1,5 @@
 #include "NutrientMix.h"
 #include "Env.h"
-#include "BuckConverter.h"
 #include <EEPROM.h>
 #define i_PV  A4
 #define v_PV  A5
@@ -10,6 +9,7 @@
 #define pwmPin 44
 #define chargePin 47
 #define dischargePin 49
+
 int
 PPWM              = 0,
 PWM               = 0,
@@ -21,11 +21,18 @@ avgCountVS        = 10,
 modeChg           = 0,
 modeDcg           = 0,
 input             = 0;
-float dt, qtot, dsoc, soc = 100;
+
+float 
+dt, 
+qtot, 
+dsoc, 
+soc = 100;
+
 float 
 levelVal, 
 humidVal,
-tempVal,
+tempVal;
+
 float
 PWM_MaxDC         = 97.0000,
 voltagePV         = 0.0000,
@@ -56,8 +63,6 @@ arrCmd[3],
 readInput;
 
 unsigned long timer, timerBat;
-//unsigned long lastTimeSerial = 0;
-//unsigned long timerDelaySerial = 1000; //1 detik
 
 void setup()
 {
@@ -220,10 +225,9 @@ void loop()
   voltageBAT  = readVoltage_BAT();
   dt = millis() - timerBat;
   dt = dt / 1000; //Time in secondsecond
-  Serial.println(dt,6);
-  socBat = readSOC(currentBAT, currentLOAD, dt);
+  soc = readSOC(currentBAT, currentLOAD, dt);
   timerBat = millis();
-  relay(socBat);
+  relay(soc);
 
   if (voltagePV < voltageBAT + voltageThreshold) PWM = 0;
   if (voltageBAT < chgVoltage) PWM++;
@@ -248,6 +252,6 @@ void loop()
     Serial.print(", ");
     Serial.print(voltageBAT, 2);
     Serial.print(", ");
-    Serial.println(socBat,5);
+    Serial.println(soc,5);
   }
 }
