@@ -6,7 +6,7 @@
 
 #define PH_PIN A0          // the pH meter Analog output is connected with the Arduino’s Analog
 #define TDS_PIN A1
-#define PING_PIN 12
+#define PING_PIN 11
 
 DFRobot_PH ph;
 GravityTDS gravityTds;
@@ -29,6 +29,7 @@ unsigned long timer;
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
+  Serial.flush();
   gravityTds.setPin(TDS_PIN);
   gravityTds.setAref(5.0);  //reference voltage on ADC, default 5.0V on Arduino UNO
   gravityTds.setAdcRange(1024);  //1024 for 10bit ADC;4096 for 12bit ADC
