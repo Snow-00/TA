@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from tensorflow import keras
 from pandas import read_csv
 
-csv_file = "../dataset/refined_dataset.csv"
+csv_file = "../dataset/dataset_nutrient_Latest.csv"
 TOTAL_COL = 4
 OUT_COL = 2
 input_col = TOTAL_COL - OUT_COL
@@ -50,7 +50,7 @@ y_train = dataset[:, input_col:]
 # y_test = dataset[train_data:, input_col]
 
 # model = create_model(x_train, y_train)
-model = keras.models.load_model('NutrientModel')
+model = keras.models.load_model('testModel')
 # print((model.weights))
 model.summary()
 

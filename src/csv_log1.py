@@ -4,11 +4,14 @@ from datetime import datetime
 from time import sleep
 
 arduino_port = "/dev/ttyACM0" #serial port of Arduino
+second_arduino = "/dev/ttyACM1" #serial port of Arduino
 baud = 115200 #arduino uno runs at 9600 baud
 fileName="dataset_environmentLast2.csv" #name of the CSV file generated
 actuator = ["ph down", "tds up"] # command actuator
 
 ser = serial.Serial(arduino_port, baud)
+print("Connected to Arduino port:" + arduino_port)
+other_ser = serial.Serial(second_arduino, baud)
 print("Connected to Arduino port:" + arduino_port)
 
 while True:    
@@ -29,16 +32,21 @@ while True:
     command = "all,0\n"
     ser.write(command.encode())
 
-    file = open(fileName, "a")
+    # file = open(fileName, "a")
     prev_time = datetime.now()
     counter_arr = np.array([1])
     
+    # input data sensor 
+    data = str(other_ser.readline(), "utf-8")
+    data = data.strip("\r\n").split(',')
+    data = np.array(data, dtype='float')
+    print(data)
+    
+    other_ser.close()
+    sleep(1)
     # while any actuator on
     while counter_arr.any():
-        # input data sensor 
-        data = str(ser.readline(), "utf-8")
-        data = data.strip("\r\n").split(',')
-        data = np.array(data, dtype='float')
+        
 
         counter = round((datetime.now() - prev_time).total_seconds(), 2)
         counter_arr = np.array([counter, counter])
@@ -59,12 +67,14 @@ while True:
         
         ser.write(command.encode())
         sleep(3)
-        data = f"{data[0]},{data[1]},{counter_arr[0]},{counter_arr[1]}"
-        file.write(data + "\n") #write data with a newline
+        data = f"{counter_arr[0]},{counter_arr[1]}"
+        # file.write(data + "\n") #write data with a newline
         print(data)
     
-    ser.write("monitor".encode())
-    sleep(2)
-    data = str(ser.readline(), "utf-8").strip("\r\n")
+    # ser.write("monitor".encode())
+    # sleep(2)
+    other_ser.open()
+    sleep(1)
+    data = str(other_ser.readline(), "utf-8").strip("\r\n")
     print(data)
-    file.close()
+    # file.close()

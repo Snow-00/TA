@@ -5,8 +5,8 @@ from datetime import datetime
 from time import sleep
 from tensorflow import keras
 
-ARDUINO_PORT = "/dev/ttyACM0" # serial port of Arduino
-OTHER_PORT = "/dev/"
+ARDUINO_PORT = "/dev/ttyACM0" # serial port of Arduino Mega
+OTHER_PORT = "/dev/ttyACM1"   # serial port of Arduino Uno
 BAUD = 115200 # arduino uno runs at 115200 baud
 
 LED_ON = 64800

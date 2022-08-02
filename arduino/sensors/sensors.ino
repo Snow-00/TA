@@ -1,16 +1,13 @@
 #include "DFRobot_PH.h"
 #include "GravityTDS.h"
 #include "MovingAverageFloat.h"
-#include "NewPing.h"
 #include <EEPROM.h>
 
 #define PH_PIN A0          // the pH meter Analog output is connected with the Arduino’s Analog
 #define TDS_PIN A1
-#define PING_PIN 11
 
 DFRobot_PH ph;
 GravityTDS gravityTds;
-NewPing sonar(PING_PIN, PING_PIN, 500);
 
 MovingAverageFloat <10> filterPH;
 MovingAverageFloat <10> filterTDS;
@@ -55,13 +52,6 @@ float readTds() {
   return tdsValue;
 }
 
-// read level sensor
-float readLevel() {
-  levelValue = sonar.ping_cm();
-  levelValue = totalLevel - levelValue;
-  return levelValue;
-}
-
 void loop() {
   // put your main code here, to run repeatedly:
   // print sensor data
@@ -69,12 +59,9 @@ void loop() {
     timer = millis ();
     phValue = readPh();
     tdsValue = readTds();
-    levelValue = readLevel();
 
     Serial.print(phValue, 2);
     Serial.print(",");
-    Serial.print(tdsValue, 2);
-    Serial.print(",");
-    Serial.println(levelValue, 2);
+    Serial.println(tdsValue, 2);
   }
 }
