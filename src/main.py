@@ -5,22 +5,25 @@ from datetime import datetime
 from tensorflow import keras
 
 ARDUINO_PORT = "/dev/ttyACM0" # serial port of Arduino
+OTHER_PORT = "/dev/"
 BAUD = 9600 # arduino uno runs at 9600 baud
+# OTHER_BAUD = 
 LED_ON = 64800
 LED_OFF = 86400 - LED_ON
 
-NUTRIENT_MODEL_FILE = "xxx.h5" # name of the saved nutrient model file
-ENV_MODEL_FILE = "xxx.h5" # name of the saved env model file
+NUTRIENT_MODEL_FILE = "NutrientModel" # name of the saved nutrient model file
+ENV_MODEL_FILE = "EnvModel" # name of the saved env model file
 nutrient_model = keras.models.load_model(NUTRIENT_MODEL_FILE)
 env_model = keras.models.load_model(ENV_MODEL_FILE)
 
-command_nutrient = ["ph down", "tds up", "water"]
+command_nutrient = ["ph down", "tds up"]
 command_env = ["pump", "peltier"]
 
 nn_nutrient = 0
 nn_env = 0
 
 ser = serial.Serial(ARDUINO_PORT, BAUD)
+ser2 = serial.Serial(OTHER_PORT, BAUD)
 print("Connected to Arduino port:" + ARDUINO_PORT)
 
 # turn on led first time
@@ -39,27 +42,45 @@ def send_data(arr):
         urllib.request.urlopen(f'https://api.thingspeak.com/update?api_key=GPFMAB99YI1AZDY9&field{n+1}={arr[n]}')
 
 def en_actuator(command, output):
+    act = np.array([0, 0])
+    cmd = []
     for n in range(len(command)):
-        if output[n][0][0] > 0:
-            cmd = command[n] + ",0\n"
-            ser.write(cmd.encode())
+        if output[0][n] >= 1:
+            cmd.append(f"{command[n]},0")
+            act[n] = 1
+        else:
+            cmd.append(f"{command[n]},1")
+    
+    cmd = ";".join(cmd)
+    cmd = cmd + "\n"
+    ser.write(cmd.encode())
+    return act
 
 def dis_actuator(command, output, time):
+    act = np.array([0, 0])
+    cmd = []
     for n in range(len(command)):
-        if time > output[n][0][0]:
-            cmd = command[n] + ",1\n"
-            ser.write(cmd.encode())
+        if time > output[0][n]:
+            cmd.append(f"{command[n]},1")
+            act[n] = 0
+        else:
+            cmd.append(f"{command[n]},0")
+
+    cmd = ";".join(cmd)
+    cmd = cmd + "\n"
+    ser.write(cmd.encode())
+    return act
 
 while True: 
     try:
-        # get new data sensor form arduino
+        # get new data sensor from arduino
         data_str = str(ser.readline(), "utf-8").strip("\r\n")
         data_arr = data_str.split(",")
-        arr_nutrient = create_arr(data_arr[:3])
-        arr_env = create_arr(data_arr[3:5])
+        arr_env = create_arr(data_arr[:2])
+        arr_nutrient = create_arr(data_arr[2:5])
     
     except:
-        urllib.request.urlopen('https://api.thingspeak.com/update?api_key=GPFMAB99YI1AZDY9&field4=1')
+        urllib.request.urlopen('https://api.thingspeak.com/update?api_key=GPFMAB99YI1AZDY9&field1=1')
         continue
 
     # send data to thingspeak
@@ -81,41 +102,33 @@ while True:
             prev_led = datetime.now()
 
     # check whether there's active actuator before running nutrient
-    if not nn_nutrient and not nn_env:
+    if not nn_nutrient.any() and not nn_env.any():
         # predict the output of nutrient
-        out_nutrient = np.array(nutrient_model.predict(arr_nutrient))
+        out_nutrient = nutrient_model.predict(arr_nutrient)
         
         # activate nutrient's actuator
-        if out_nutrient.any():
-            en_actuator(command_nutrient, out_nutrient)
-            nn_nutrient = 1
+        nn_nutrient = en_actuator(command_nutrient, out_nutrient)
+        if nn_nutrient.any():
             prev_time = datetime.now()
     
-    if nn_nutrient:
+    if nn_nutrient.any():
         timer = round((datetime.now() - prev_time).total_seconds(), 2)
         
         # turn off actuator when duration is over
-        dis_actuator(command_nutrient, out_nutrient, timer)
-
-        if not out_nutrient.any():
-            nn_nutrient = 0
+        nn_nutrient = dis_actuator(command_nutrient, out_nutrient, timer)
     
     # check whether there's active actuator before running env
-    if not nn_nutrient and not nn_env:
+    if not nn_nutrient.any() and not nn_env.any():
         # predict the output of env
-        out_env = np.array(env_model.predict(arr_env))
+        out_env = env_model.predict(arr_env)
         
         # activate env's actuator
-        if out_env.any():
-            en_actuator(command_env, out_env)
-            nn_env = 1
+        nn_env = en_actuator(command_env, out_env)
+        if nn_env.any():
             prev_time = datetime.now()
     
-    if nn_env:
+    if nn_env.any():
         timer = round((datetime.now() - prev_time).total_seconds(), 2)
         
         # turn off actuator when duration is over
-        dis_actuator(command_nutrient, out_nutrient, timer)
-
-        if not out_env.any():
-            nn_env = 0
+        nn_env = dis_actuator(command_nutrient, out_nutrient, timer)
