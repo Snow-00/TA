@@ -249,9 +249,9 @@ void loop()
     Serial.print(levelVal, 2);
     Serial.print(",");
     Serial.print(voltagePV, 2);
-    Serial.print(", ");
+    Serial.print(",");
     Serial.print(voltageBAT, 2);
-    Serial.print(", ");
+    Serial.print(",");
     Serial.println(soc,5);
   }
 }

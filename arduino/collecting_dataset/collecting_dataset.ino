@@ -46,11 +46,11 @@ void setup()
 void pump(String readInput, int state) {
   if (readInput == "ph down") {
     digitalWrite(phDown, state);
-    digitalWrite(mixer, state);
+//    digitalWrite(mixer, state);
   }
   else if (readInput == "tds up") {
     digitalWrite(tdsUp, state);
-    digitalWrite(mixer, state);
+//    digitalWrite(mixer, state);
   }
   else if (readInput == "water") {
     digitalWrite(water, state);

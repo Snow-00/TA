@@ -18,7 +18,7 @@ SP_TEMP = 23
 SP_PH = 5.75
 SP_TDS = 725
 
-NUTRIENT_MODEL_FILE = "NutrientModel" # name of the saved nutrient model file
+NUTRIENT_MODEL_FILE = "NewNutrientModel" # name of the saved nutrient model file
 ENV_MODEL_FILE = "EnvModel" # name of the saved env model file
 nutrient_model = keras.models.load_model(NUTRIENT_MODEL_FILE)
 env_model = keras.models.load_model(ENV_MODEL_FILE)
@@ -28,6 +28,8 @@ command_env = ["pump", "peltier"]
 
 nn_nutrient = np.array([0])
 nn_env = np.array([0])
+
+water_state = 0
 
 ser = serial.Serial(ARDUINO_PORT, BAUD)
 print("Connected to Arduino port:" + ARDUINO_PORT)
@@ -79,9 +81,13 @@ def dis_actuator(command, output, time):
     ser.write(cmd.encode())
     return act
 
+input("press start: ")
+
 while True: 
     try:
         # open second arduino
+        other_ser.close()
+        sleep(1)
         other_ser.open()
         sleep(1)
 
@@ -92,6 +98,8 @@ while True:
         arr_nutrient[0][0] = SP_PH - arr_nutrient[0][0]
         arr_nutrient[0][1] = SP_TDS - arr_nutrient[0][1]
 
+        print(data_arr_ntr)
+
         # get new data sensor from main arduino
         data_str = str(ser.readline(), "utf-8").strip("\r\n")
         data_arr_env = data_str.split(",")
@@ -100,12 +108,15 @@ while True:
         arr_env[0][1] = SP_TEMP - arr_env[0][1]
         level = float(data_arr_env[2])
 
+        print(data_arr_env)
+
         # close second arduino
-        other_ser.close()
+        # other_ser.close()
     
-    except:
+    except Exception as e:
         urllib.request.urlopen('https://api.thingspeak.com/update?api_key=GPFMAB99YI1AZDY9&field1=1')
-        continue
+        print(e)
+        break
     
     # send data to thingspeak
     send_data(data_arr_env, 1)
@@ -125,12 +136,26 @@ while True:
             ser.write("led,0\n".encode())
             led_state = 1
             prev_led = datetime.now()
+    
+    # level control
+    if not water_state:
+        if level <= 4:
+            ser.write("water,0\n".encode())
+            sleep(2)
+            water_state = 1
+    else:
+        if level >= 10:
+            ser.write("water,1\n".encode())
+            sleep(2)
+            water_state = 0
+        continue
 
     # check whether there's active actuator before running nutrient
     if not nn_nutrient.any() and not nn_env.any():
         # predict the output of nutrient
         out_nutrient = nutrient_model.predict(arr_nutrient)
-        
+        print(out_nutrient)
+
         # activate nutrient's actuator
         nn_nutrient = en_actuator(command_nutrient, out_nutrient)
         if nn_nutrient.any():
@@ -146,6 +171,7 @@ while True:
     if not nn_nutrient.any() and not nn_env.any():
         # predict the output of env
         out_env = env_model.predict(arr_env)
+        print(out_env)
         
         # activate env's actuator
         nn_env = en_actuator(command_env, out_env)
@@ -157,3 +183,15 @@ while True:
         
         # turn off actuator when duration is over
         nn_env = dis_actuator(command_nutrient, out_nutrient, timer)
+
+# open second arduino
+ser.close()
+sleep(1)
+ser.open()
+sleep(1)
+
+# open second arduino
+other_ser.close()
+sleep(1)
+other_ser.open()
+sleep(1)

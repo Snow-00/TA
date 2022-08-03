@@ -4,7 +4,7 @@
 #include "Arduino.h"
 #include "NewPing.h"
 
-#define PING_PIN 11
+#define PING_PIN 50
 
 #define phDown 32
 #define tdsUp 34
